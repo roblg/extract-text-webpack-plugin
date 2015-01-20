@@ -148,16 +148,21 @@ ExtractTextPlugin.prototype.apply = function(compiler) {
 				var extractedChunk = extractedChunks[idx];
 				extractedChunk.initial = true;
 			});
+			var alreadyBuilt = [];
 			async.forEach(chunks, function(chunk, callback) {
 				var extractedChunk = extractedChunks[chunks.indexOf(chunk)];
 				var shouldExtract = !!(options.allChunks || chunk.initial);
 				async.forEach(chunk.modules.slice(), function(module, callback) {
+					if (alreadyBuilt.indexOf(module) >= 0) {
+						return callback();
+					}
 					var meta = module.meta && module.meta[__dirname];
 					if(meta && (!meta.options.id || meta.options.id === id)) {
 						var wasExtracted = Array.isArray(meta.content);
 						if(shouldExtract !== wasExtracted) {
 							module.meta[__dirname + "/extract"] = shouldExtract
 							compilation.rebuildModule(module, function(err) {
+								alreadyBuilt.push(module);
 								if(err) {
 									compilation.errors.push(err);
 									return callback();
